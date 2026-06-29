@@ -95,6 +95,11 @@
         .familia-item .btn-eliminar-familia-item:hover { transform: scale(1.2); background: #c82333; }
         .familia-item.modo-eliminar-familia { border-left-color: #fd7e14; background: rgba(253, 126, 20, 0.15); }
         .familia-item.modo-eliminar-familia:hover { background: rgba(253, 126, 20, 0.25); }
+        .btn-editar-familia { background: #17a2b8; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; flex-shrink: 0; margin-right: 5px; }
+        .btn-editar-familia:hover { transform: scale(1.2); background: #138496; }
+        .btn-editar-familia-mini { background: #17a2b8; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; flex-shrink: 0; margin-right: 4px; }
+        .btn-editar-familia-mini:hover { transform: scale(1.2); background: #138496; }
+        .acciones-familia { display: flex; gap: 4px; align-items: center; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 1000; justify-content: center; align-items: center; animation: fadeIn 0.3s ease; }
         .modal-overlay.active { display: flex; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
@@ -183,6 +188,29 @@
                 <div class="modal-buttons">
                     <button class="btn-guardar" id="btnGuardarFamilia"><i class="fas fa-save"></i> Guardar</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalAgregarFamilia')"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL EDITAR FAMILIA ===== -->
+    <div class="modal-overlay" id="modalEditarFamilia">
+        <div class="modal">
+            <h2><i class="fas fa-edit"></i> Editar Familia</h2>
+            <div>
+                <label><i class="fas fa-user"></i> Nombre *</label>
+                <input type="text" id="editarNombre" placeholder="Nombre de la familia">
+                
+                <input type="hidden" id="editarFamiliaId">
+                
+                <div style="background:rgba(23,162,184,0.15);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;border-left:3px solid #17a2b8;">
+                    <strong style="color:#17a2b8;">Información actual:</strong><br>
+                    <span id="editarInfoActual">Cargando...</span>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn-guardar" id="btnGuardarEdicion"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal('modalEditarFamilia')"><i class="fas fa-times"></i> Cancelar</button>
                 </div>
             </div>
         </div>
@@ -385,6 +413,10 @@
                 agregarFamilia();
             });
             
+            document.getElementById('btnGuardarEdicion').addEventListener('click', function() {
+                guardarEdicionFamilia();
+            });
+            
             setInterval(async () => {
                 if (!document.querySelector('.modal-overlay.active')) {
                     await cargarDesdeFirebase();
@@ -393,7 +425,7 @@
                 }
             }, 3000);
             
-            console.log('✅ Sistema con mesas redondas de 8 sillas');
+            console.log('✅ Sistema con mesas redondas de 8 sillas y edición de familias');
             console.log(`📊 ${MESAS.length} mesas`);
             console.log(`👨‍👩‍👧‍👦 ${familias.length} familias`);
         });
@@ -425,6 +457,68 @@
             if (ocupacion === 0) return 'disponible';
             if (ocupacion >= capacidad) return 'completa';
             return 'parcial';
+        }
+
+        // =============================================
+        // EDITAR FAMILIA - NUEVA FUNCIONALIDAD
+        // =============================================
+        function abrirModalEditarFamilia(familiaId) {
+            const familia = familias.find(f => f.id === familiaId);
+            if (!familia) {
+                alert('❌ Familia no encontrada');
+                return;
+            }
+
+            document.getElementById('editarFamiliaId').value = familiaId;
+            document.getElementById('editarNombre').value = familia.nombre;
+            
+            const infoActual = document.getElementById('editarInfoActual');
+            infoActual.innerHTML = `
+                <strong>Nombre actual:</strong> ${familia.nombre}<br>
+                <strong>Personas:</strong> ${familia.numeroPersonas}<br>
+                <strong>Mesa:</strong> ${familia.mesaAsignada}
+            `;
+            
+            document.getElementById('modalEditarFamilia').classList.add('active');
+            document.getElementById('editarNombre').focus();
+            document.getElementById('editarNombre').select();
+        }
+
+        async function guardarEdicionFamilia() {
+            const familiaId = parseInt(document.getElementById('editarFamiliaId').value);
+            const nuevoNombre = document.getElementById('editarNombre').value.trim();
+
+            if (!nuevoNombre) {
+                alert('❌ Ingrese un nombre válido');
+                return;
+            }
+
+            const familia = familias.find(f => f.id === familiaId);
+            if (!familia) {
+                alert('❌ Familia no encontrada');
+                return;
+            }
+
+            // Guardar el nombre anterior para el mensaje
+            const nombreAnterior = familia.nombre;
+            
+            // Actualizar el nombre
+            familia.nombre = nuevoNombre;
+            
+            await guardarEnFirebase();
+            
+            cerrarModal('modalEditarFamilia');
+            cargarMesas();
+            cargarOpcionesMesas();
+            
+            document.getElementById('info').innerHTML = `
+                <div style="background:rgba(76,175,80,0.2);padding:12px;border-radius:10px;border-left:4px solid #4CAF50;font-size:13px;">
+                    <strong style="color:#4CAF50;"><i class="fas fa-check-circle"></i> ✅ Familia "${nombreAnterior}" → "${nuevoNombre}"</strong>
+                </div>
+            `;
+            
+            // Actualizar la vista de la mesa
+            mostrarInfoMesa(familia.mesaAsignada);
         }
 
         // =============================================
@@ -861,7 +955,7 @@
         }
 
         // =============================================
-        // MOSTRAR INFO DE MESA
+        // MOSTRAR INFO DE MESA - CON BOTÓN EDITAR
         // =============================================
         function mostrarInfoMesa(mesaId) {
             const capacidad = getCapacidadMesa(mesaId);
@@ -905,13 +999,19 @@
             if (familiasEnMesa.length > 0) {
                 html += `<div class="lista-familias-mesa">`;
                 familiasEnMesa.forEach(f => {
+                    const mostrarEliminar = modoEliminarFamilia ? '' : 'display:none;';
                     html += `
                         <div class="fam">
                             <span>👨‍👩‍👧‍👦 ${f.nombre} (${f.numeroPersonas} personas)</span>
-                            <button class="btn-eliminar-familia-mini" onclick="eliminarFamilia(${f.id}, '${f.nombre}')" 
-                                    style="${modoEliminarFamilia ? 'display:flex;' : 'display:none;'}">
-                                ✕
-                            </button>
+                            <div class="acciones-familia">
+                                <button class="btn-editar-familia-mini" onclick="abrirModalEditarFamilia(${f.id})" title="Editar nombre">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn-eliminar-familia-mini" onclick="eliminarFamilia(${f.id}, '${f.nombre}')" 
+                                        style="${mostrarEliminar}">
+                                    ✕
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
@@ -1231,14 +1331,13 @@
         });
 
         // =============================================
-        // AGREGAR MESA - CORREGIDO
+        // AGREGAR MESA
         // =============================================
         function abrirModalAgregarMesa() {
             document.getElementById('modalAgregarMesa').classList.add('active');
             document.getElementById('numeroMesa').value = '';
             document.getElementById('numeroMesa').focus();
             
-            // Forzar que el selector muestre el texto correcto para redonda
             const select = document.getElementById('tipoMesa');
             const options = select.options;
             for (let i = 0; i < options.length; i++) {
@@ -1348,7 +1447,7 @@
             } else {
                 let html = `
                     <table class="tabla-familias">
-                        <thead><tr><th><i class="fas fa-user"></i> Familia</th><th><i class="fas fa-chair"></i> Mesa</th><th><i class="fas fa-users"></i> Personas</th><th><i class="fas fa-calendar"></i> Registro</th></tr></thead>
+                        <thead><tr><th><i class="fas fa-user"></i> Familia</th><th><i class="fas fa-chair"></i> Mesa</th><th><i class="fas fa-users"></i> Personas</th><th><i class="fas fa-calendar"></i> Registro</th><th><i class="fas fa-cog"></i> Acciones</th></tr></thead>
                         <tbody>
                 `;
                 familias.forEach(f => {
@@ -1366,6 +1465,14 @@
                             <td>📍 ${f.mesaAsignada} ${tipo} ${esPrincipal ? '⭐' : ''}</td>
                             <td>👥 ${f.numeroPersonas}</td>
                             <td>${new Date(f.fechaRegistro).toLocaleDateString()}</td>
+                            <td>
+                                <button onclick="abrirModalEditarFamilia(${f.id})" style="background:#17a2b8;color:white;border:none;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;margin-right:3px;">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button onclick="eliminarFamilia(${f.id}, '${f.nombre}')" style="background:#dc3545;color:white;border:none;border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -1464,7 +1571,7 @@
         // =============================================
         // INICIO
         // =============================================
-        console.log('✅ Sistema con mesas redondas de 8 sillas');
+        console.log('✅ Sistema con mesas redondas de 8 sillas y edición de familias');
         console.log('📝 Modifica capacidad y número de la mesa principal');
         console.log('💾 Los datos se guardan en Firebase');
         console.log('🔄 Actualización automática cada 3 segundos');
