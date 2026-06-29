@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asignación de Mesas</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <style>
+        /* ===== RESET Y BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a0a0a 0%, #3d0a0a 50%, #5B0A0A 100%);
+            min-height: 100vh;
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.6);
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to top, #1a0a0a, transparent);
+        }
+
+        header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ===== MENÚ ===== */
+        .menu {
+            background: rgba(123, 17, 19, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .menu button {
+            background: linear-gradient(145deg, #D4AF37, #b8941e);
+            color: #1a0a0a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            letter-spacing: 0.3px;
+        }
+
+        .menu button i {
+            font-size: 14px;
+        }
+
+        .menu button:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
+            background: linear-gradient(145deg, #e8c84a, #D4AF37);
+        }
+
+        .menu button:active {
+            transform: scale(0.95);
+        }
+
+        .menu .btn-eliminar {
+            background: linear-gradient(145deg, #dc3545, #a71d2a);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            color: white;
+        }
+
+        .menu .btn-eliminar:hover {
+            background: linear-gradient(145deg, #ff4757, #dc3545);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.5);
+        }
+
+        .menu .btn-eliminar.activo {
+            background: linear-gradient(145deg, #ff6b6b, #e03131);
+            animation: pulse-btn 1s infinite;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.6);
+        }
+
+        @keyframes pulse-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .menu .btn-agregar-mesa {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+
+        .menu .btn-agregar-mesa:hover {
+            background: linear-gradient(145deg, #34ce57, #28a745);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.5);
+        }
+
+        .menu .btn-mesa-principal {
+            background: linear-gradient(145deg, #17a2b8, #0f7a8a);
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
+            color: white;
+        }
+
+        .menu .btn-mesa-principal:hover {
+            background: linear-gradient(145deg, #20c4db, #17a2b8);
+            box-shadow: 0 8px 25px rgba(23, 162, 184, 0.5);
+        }
+
+        .menu .btn-limpiar {
+            background: linear-gradient(145deg, #6c757d, #495057);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+            color: white;
+        }
+
+        .menu .btn-limpiar:hover {
+            background: linear-gradient(145deg, #868e96, #6c757d);
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+
+        .menu .btn-estado {
+            background: linear-gradient(145deg, #28a745, #1e7e34);
+            color: white;
+            font-size: 11px;
+            padding: 8px 16px;
+            cursor: default;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            border-radius: 20px;
+        }
+
+        .menu .btn-estado i {
+            font-size: 12px;
+        }
+
+        .menu .btn-estado.desconectado {
+            background: linear-gradient(145deg, #dc3545, #a71d2a);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        /* ===== CONTENEDOR ===== */
+        #contenedor {
+            display: flex;
+            justify-content: space-between;
+            padding: 25px;
+            gap: 25px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        #salon {
+            width: 72%;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 450px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 2px 20px rgba(0,0,0,0.2);
+        }
+
+        #panel {
+            width: 26%;
+            background: rgba(123, 17, 19, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            color: white;
+            padding: 25px;
+            max-height: 550px;
+            overflow-y: auto;
+            position: sticky;
+            top: 80px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+        }
+
+        #panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #panel::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+
+        #panel::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5);
+            border-radius: 10px;
+        }
+
+        #panel h2 {
+            color: #D4AF37;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
+        }
+
+        #panel h2 i {
+            margin-right: 10px;
+        }
+
+        #panel hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.5), transparent);
+            margin-bottom: 20px;
+        }
+
+        /* ===== MESAS ===== */
+        .rectangular, .cuadrada, .redonda, .mesa-principal {
+            position: relative;
+            background: radial-gradient(ellipse at 30% 30%, #f8f5e9, #e8e0d0);
+            border: 3px solid #D4AF37;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+            cursor: pointer;
+            margin: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rectangular:hover, .cuadrada:hover, .redonda:hover, .mesa-principal:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .rectangular {
+            width: 210px;
+            height: 130px;
+        }
+
+        .cuadrada {
+            width: 150px;
+            height: 150px;
+        }
+
+        .redonda {
+            width: 190px;
+            height: 190px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #f8f5e9, #e0d5c8);
+            border-color: #9C27B0;
+        }
+
+        .redonda .numero {
+            color: #9C27B0;
+            font-size: 24px;
+            text-shadow: 0 2px 10px rgba(156, 39, 176, 0.2);
+        }
+
+        .redonda.completa {
+            background: radial-gradient(circle at 30% 30%, #4CAF50, #2E7D32);
+            border-color: #1B5E20;
+        }
+
+        .redonda.completa .numero {
+            color: white;
+        }
+
+        .redonda.parcial {
+            background: radial-gradient(circle at 30% 30%, #FFF3E0, #FFE0B2);
+            border-color: #FF9800;
+        }
+
+        .redonda.parcial .numero {
+            color: #E65100;
+        }
+
+        .mesa-principal {
+            width: 270px;
+            height: 160px;
+            border-color: #17a2b8;
+            background: linear-gradient(145deg, #f0f8fa, #d4e8ec);
+            box-shadow: 0 8px 25px rgba(23, 162, 184, 0.3);
+        }
+
+        .mesa-principal .numero {
+            color: #17a2b8;
+            font-size: 22px;
+        }
+
+        .mesa-principal .capacidad {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 11px;
+            color: #17a2b8;
+            background: rgba(255,255,255,0.9);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .mesa-principal.completa {
+            background: linear-gradient(145deg, #4CAF50, #2E7D32);
+            border-color: #1B5E20;
+        }
+
+        .mesa-principal.completa .numero {
+            color: white;
+        }
+
+        .mesa-principal.completa .capacidad {
+            color: white;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .mesa-principal.parcial {
+            background: linear-gradient(145deg, #FFF3E0, #FFE0B2);
+            border-color: #FF9800;
+        }
+
+        .rectangular.completa, .cuadrada.completa {
+            background: radial-gradient(ellipse at 30% 30%, #4CAF50, #2E7D32);
+            border-color: #1B5E20;
+        }
+
+        .rectangular.completa .numero, 
+        .cuadrada.completa .numero {
+            color: white;
+        }
+
+        .rectangular.parcial, .cuadrada.parcial {
+            background: radial-gradient(ellipse at 30% 30%, #FFF3E0, #FFE0B2);
+            border-color: #FF9800;
+        }
+
+        .rectangular.parcial .numero,
+        .cuadrada.parcial .numero {
+            color: #E65100;
+        }
+
+        .rectangular.modo-eliminar, 
+        .cuadrada.modo-eliminar,
+        .redonda.modo-eliminar,
+        .mesa-principal.modo-eliminar {
+            border-color: #dc3545 !important;
+            animation: shake 0.5s infinite;
+            box-shadow: 0 0 30px rgba(220, 53, 69, 0.4) !important;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(1deg); }
+            75% { transform: rotate(-1deg); }
+        }
+
+        .numero {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            font-weight: 800;
+            color: #333;
+            z-index: 1;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .btn-eliminar-mesa {
+            position: absolute;
+            top: -12px;
+            right: -12px;
+            background: linear-gradient(145deg, #dc3545, #a71d2a);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 20;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.5);
+            line-height: 1;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-eliminar-mesa.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .btn-eliminar-mesa:hover {
+            transform: scale(1.2);
+            box-shadow: 0 6px 25px rgba(220, 53, 69, 0.7);
+        }
+
+        .info-familia {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            white-space: nowrap;
+            display: none;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .rectangular:hover .info-familia,
+        .cuadrada:hover .info-familia,
+        .redonda:hover .info-familia,
+        .mesa-principal:hover .info-familia {
+            display: block;
+        }
+
+        /* ===== SILLAS ===== */
+        .silla {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid white;
+            position: absolute;
+            cursor: pointer;
+            z-index: 3;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .silla.disponible {
+            background: linear-gradient(145deg, #00C853, #00A844);
+        }
+
+        .silla.disponible:hover {
+            transform: scale(1.3);
+            box-shadow: 0 4px 20px rgba(0, 200, 83, 0.5);
+        }
+
+        .silla.ocupada {
+            background: linear-gradient(145deg, #FF6B6B, #E03131);
+            cursor: not-allowed;
+        }
+
+        .silla.ocupada:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .contador-ocupacion {
+            position: absolute;
+            bottom: 10px;
+            left: 15px;
+            font-size: 11px;
+            color: #666;
+            background: rgba(255,255,255,0.9);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            z-index: 1;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .rectangular.completa .contador-ocupacion,
+        .cuadrada.completa .contador-ocupacion,
+        .redonda.completa .contador-ocupacion {
+            color: white;
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* ===== PANEL INFO ===== */
+        #info {
+            color: #f0f0f0;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        #info .mensaje-inicial {
+            text-align: center;
+            color: #D4AF37;
+            font-style: italic;
+            padding: 20px 0;
+            opacity: 0.7;
+        }
+
+        .familia-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border-left: 4px solid #D4AF37;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .familia-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+        }
+
+        .familia-item strong {
+            color: #D4AF37;
+            font-size: 15px;
+        }
+
+        .familia-item .detalle {
+            font-size: 13px;
+            color: #ccc;
+            margin-top: 4px;
+        }
+
+        /* ===== MODALES ===== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #2a0a0a, #4a0f0f);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 24px;
+            padding: 35px;
+            max-width: 480px;
+            width: 92%;
+            color: white;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+        }
+
+        .modal::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5);
+            border-radius: 10px;
+        }
+
+        .modal h2 {
+            color: #D4AF37;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .modal h2 i {
+            margin-right: 12px;
+        }
+
+        .modal label {
+            display: block;
+            margin-bottom: 6px;
+            color: #D4AF37;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .modal input, .modal select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            color: white;
+            margin-bottom: 18px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal input:focus, .modal select:focus {
+            outline: none;
+            border-color: #D4AF37;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .modal input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        .modal select option {
+            background: #2a0a0a;
+            color: white;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .modal-buttons button {
+            padding: 12px 32px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-guardar {
+            background: linear-gradient(145deg, #D4AF37, #b8941e);
+            color: #1a0a0a;
+            box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-guardar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5);
+        }
+
+        .btn-cancelar {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-cancelar:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        /* ===== TABLA ===== */
+        .tabla-familias {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .tabla-familias th {
+            background: rgba(212, 175, 55, 0.2);
+            color: #D4AF37;
+            padding: 10px;
+            text-align: left;
+            font-weight: 700;
+        }
+
+        .tabla-familias td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tabla-familias tr:hover td {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ===== RESULTADOS BÚSQUEDA ===== */
+        .resultado-item {
+            padding: 12px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .resultado-item:hover {
+            background: rgba(255,255,255,0.12);
+            border-left-color: #D4AF37;
+            transform: translateX(5px);
+        }
+
+        .lista-familias-mesa {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #aaa;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 6px;
+        }
+
+        .lista-familias-mesa .fam {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            #contenedor {
+                flex-direction: column;
+            }
+            #salon {
+                width: 100%;
+                justify-content: center;
+            }
+            #panel {
+                width: 100%;
+                max-height: none;
+                position: static;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .menu button {
+                padding: 8px 14px;
+                font-size: 11px;
+            }
+            .menu button i {
+                font-size: 12px;
+            }
+            .rectangular, .cuadrada, .redonda, .mesa-principal {
+                margin: 6px;
+            }
+            .rectangular {
+                width: 160px;
+                height: 100px;
+            }
+            .cuadrada {
+                width: 120px;
+                height: 120px;
+            }
+            .redonda {
+                width: 140px;
+                height: 140px;
+            }
+            .mesa-principal {
+                width: 200px;
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <img src="https://i.postimg.cc/3xW0KRtb/BANNER-2.jpg" alt="Banner">
+    </header>
+
+    <!-- ===== MENÚ ===== -->
+    <div class="menu">
+        <button onclick="abrirModalAgregarFamilia()">
+            <i class="fas fa-user-plus"></i> Agregar Familia
+        </button>
+        <button onclick="abrirModalBuscar()">
+            <i class="fas fa-search"></i> Buscar
+        </button>
+        <button onclick="verTabla()">
+            <i class="fas fa-table"></i> Ver Tabla
+        </button>
+        <button onclick="recargarMesas()">
+            <i class="fas fa-sync-alt"></i> Recargar
+        </button>
+        <button class="btn-mesa-principal" onclick="configurarMesaPrincipal()">
+            <i class="fas fa-star"></i> Mesa Principal
+        </button>
+        <button class="btn-agregar-mesa" onclick="abrirModalAgregarMesa()">
+            <i class="fas fa-plus-circle"></i> Agregar Mesa
+        </button>
+        <button class="btn-eliminar" onclick="toggleModoEliminar()">
+            <i class="fas fa-trash-alt"></i> Eliminar Mesa
+        </button>
+        <button class="btn-limpiar" onclick="limpiarTodo()">
+            <i class="fas fa-broom"></i> Limpiar Todo
+        </button>
+        <button class="btn-estado" id="btnEstado">
+            <i class="fas fa-circle"></i> Conectado
+        </button>
+    </div>
+
+    <!-- ===== CONTENIDO ===== -->
+    <div id="contenedor">
+        <div id="salon"></div>
+        <div id="panel">
+            <h2><i class="fas fa-info-circle"></i> Información</h2>
+            <hr>
+            <div id="info">
+                <div class="mensaje-inicial">
+                    <i class="fas fa-chair" style="font-size: 40px; display: block; margin-bottom: 15px; opacity: 0.5;"></i>
+                    Seleccione una mesa
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODALES ===== -->
+    <div class="modal-overlay" id="modalAgregarFamilia">
+        <div class="modal">
+            <h2><i class="fas fa-user-plus"></i> Agregar Familia</h2>
+            <form id="formFamilia">
+                <label><i class="fas fa-user"></i> Nombre *</label>
+                <input type="text" id="nombre" placeholder="Ej: Familia Pérez" required>
+
+                <label><i class="fas fa-users"></i> Personas *</label>
+                <input type="number" id="numeroPersonas" placeholder="Ej: 4" min="1" required>
+
+                <label><i class="fas fa-chair"></i> Mesa *</label>
+                <select id="mesaAsignada" required>
+                    <option value="">Seleccione...</option>
+                </select>
+
+                <div id="sugerencias" style="margin-top:8px;display:none;"></div>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-guardar"><i class="fas fa-save"></i> Guardar</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal('modalAgregarFamilia')"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalBuscar">
+        <div class="modal">
+            <h2><i class="fas fa-search"></i> Buscar</h2>
+            <input type="text" id="terminoBusqueda" placeholder="Nombre de familia..." style="width:100%;padding:12px;border:2px solid rgba(212,175,55,0.3);border-radius:12px;background:rgba(255,255,255,0.06);color:white;font-size:14px;">
+            <div style="margin-top:12px;display:flex;gap:10px;">
+                <button onclick="buscar()" class="btn-guardar" style="flex:1;"><i class="fas fa-search"></i> Buscar</button>
+                <button onclick="cerrarModal('modalBuscar')" class="btn-cancelar"><i class="fas fa-times"></i> Cerrar</button>
+            </div>
+            <div id="resultadosBusqueda" style="margin-top:15px;max-height:300px;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalTabla">
+        <div class="modal" style="max-width:750px;">
+            <h2><i class="fas fa-table"></i> Familias Registradas</h2>
+            <div id="contenidoTabla" style="max-height:400px;overflow-y:auto;"></div>
+            <div style="text-align:center;margin-top:15px;">
+                <button onclick="cerrarModal('modalTabla')" class="btn-cancelar"><i class="fas fa-times"></i> Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalAgregarMesa">
+        <div class="modal">
+            <h2><i class="fas fa-plus-circle"></i> Agregar Mesa</h2>
+            <form id="formMesa">
+                <label><i class="fas fa-shapes"></i> Tipo</label>
+                <select id="tipoMesa" required>
+                    <option value="rectangular"><i class="fas fa-vector-square"></i> Rectangular (6 sillas)</option>
+                    <option value="cuadrada"><i class="fas fa-square"></i> Cuadrada (4 sillas)</option>
+                    <option value="redonda"><i class="fas fa-circle"></i> Redonda (10 sillas)</option>
+                </select>
+
+                <label><i class="fas fa-hashtag"></i> Número</label>
+                <input type="number" id="numeroMesa" placeholder="Ej: 10" min="1" required>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-guardar"><i class="fas fa-check"></i> Agregar</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal('modalAgregarMesa')"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalMesaPrincipal">
+        <div class="modal">
+            <h2><i class="fas fa-star"></i> Mesa Principal</h2>
+            <form id="formMesaPrincipal">
+                <label><i class="fas fa-users"></i> Capacidad</label>
+                <input type="number" id="capacidadMesaPrincipal" placeholder="Ej: 10" min="1" value="8" required>
+
+                <label><i class="fas fa-hashtag"></i> Número</label>
+                <input type="number" id="numeroMesaPrincipal" placeholder="Ej: 0" min="0" value="0" required>
+                <p style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:-10px;margin-bottom:10px;">Usa 0 o un número libre</p>
+
+                <div class="modal-buttons">
+                    <button type="submit" class="btn-guardar"><i class="fas fa-check"></i> Guardar</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal('modalMesaPrincipal')"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // =============================================
+        // CONFIGURACIÓN DE FIREBASE
+        // =============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCTKn4E5-VKgxM-6qCLA_xJA4vicDwyT4Q",
+            authDomain: "sistema-de-mesas-ab0ee.firebaseapp.com",
+            databaseURL: "https://sistema-de-mesas-ab0ee-default-rtdb.firebaseio.com",
+            projectId: "sistema-de-mesas-ab0ee",
+            storageBucket: "sistema-de-mesas-ab0ee.firebasestorage.app",
+            messagingSenderId: "197486705762",
+            appId: "1:197486705762:web:5352186176a23316dee53b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // =============================================
+        // VARIABLES GLOBALES
+        // =============================================
+        let MESAS = [];
+        let MESA_PRINCIPAL = { id: 0, capacidad: 8, habilitada: false };
+        let modoEliminar = false;
+        let familias = [];
+        let nextId = 1;
+
+        // =============================================
+        // FUNCIONES DE FIREBASE
+        // =============================================
+        async function guardarEnFirebase() {
+            try {
+                const datos = {
+                    mesas: MESAS,
+                    mesaPrincipal: MESA_PRINCIPAL,
+                    familias: familias,
+                    nextId: nextId
+                };
+                await firebase.database().ref('sistema').set(datos);
+                console.log('✅ Datos guardados en Firebase');
+                document.getElementById('btnEstado').innerHTML = '<i class="fas fa-circle"></i> Conectado';
+                document.getElementById('btnEstado').className = 'btn-estado';
+            } catch (error) {
+                console.error('❌ Error guardando:', error);
+                document.getElementById('btnEstado').innerHTML = '<i class="fas fa-circle"></i> Error';
+                document.getElementById('btnEstado').className = 'btn-estado desconectado';
+            }
+        }
+
+        async function cargarDesdeFirebase() {
+            try {
+                const snapshot = await firebase.database().ref('sistema').once('value');
+                
+                if (snapshot.exists()) {
+                    const datos = snapshot.val();
+                    MESAS = datos.mesas || [];
+                    MESA_PRINCIPAL = datos.mesaPrincipal || { id: 0, capacidad: 8, habilitada: false };
+                    familias = datos.familias || [];
+                    nextId = datos.nextId || 1;
+                    console.log('✅ Datos cargados desde Firebase');
+                    document.getElementById('btnEstado').innerHTML = '<i class="fas fa-circle"></i> Conectado';
+                    document.getElementById('btnEstado').className = 'btn-estado';
+                } else {
+                    console.log('📭 No hay datos en Firebase, iniciando con 0 mesas');
+                    MESAS = [];
+                    MESA_PRINCIPAL = { id: 0, capacidad: 8, habilitada: false };
+                    familias = [];
+                    nextId = 1;
+                }
+            } catch (error) {
+                console.error('❌ Error cargando:', error);
+                document.getElementById('btnEstado').innerHTML = '<i class="fas fa-circle"></i> Desconectado';
+                document.getElementById('btnEstado').className = 'btn-estado desconectado';
+            }
+        }
+
+        // =============================================
+        // INICIALIZACIÓN
+        // =============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarDesdeFirebase();
+            cargarMesas();
+            cargarOpcionesMesas();
+            
+            document.getElementById('numeroPersonas').addEventListener('input', mostrarSugerencias);
+            document.getElementById('numeroPersonas').addEventListener('change', mostrarSugerencias);
+            
+            setInterval(async () => {
+                if (!document.querySelector('.modal-overlay.active')) {
+                    await cargarDesdeFirebase();
+                    cargarMesas();
+                    cargarOpcionesMesas();
+                }
+            }, 3000);
+            
+            console.log('✅ Sistema Moderno con Firebase');
+            console.log(`📊 ${MESAS.length} mesas`);
+            console.log(`👨‍👩‍👧‍👦 ${familias.length} familias`);
+        });
+
+        // =============================================
+        // LIMPIAR TODO
+        // =============================================
+        function limpiarTodo() {
+            if (!confirm('⚠️ ¿Estás seguro de eliminar TODOS los datos?\n\nEsto eliminará todas las mesas, familias y configuraciones.\n\n¡Esta acción no se puede deshacer!')) {
+                return;
+            }
+
+            if (!confirm('⚠️ ÚLTIMA ADVERTENCIA: ¿Realmente quieres borrar todo?')) {
+                return;
+            }
+
+            MESAS = [];
+            MESA_PRINCIPAL = { id: 0, capacidad: 8, habilitada: false };
+            familias = [];
+            nextId = 1;
+            modoEliminar = false;
+
+            guardarEnFirebase();
+            cargarMesas();
+            cargarOpcionesMesas();
+            
+            document.querySelector('.btn-eliminar').classList.remove('activo');
+            document.querySelector('.btn-eliminar').innerHTML = '<i class="fas fa-trash-alt"></i> Eliminar Mesa';
+            
+            alert('🧹 Todos los datos han sido eliminados. Ahora hay 0 mesas.');
+        }
+
+        // =============================================
+        // FUNCIONES DE UTILIDAD
+        // =============================================
+        function getCapacidadMesa(mesaId) {
+            if (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === mesaId) {
+                return MESA_PRINCIPAL.capacidad;
+            }
+            const mesa = MESAS.find(m => m.id === mesaId);
+            return mesa ? mesa.sillas : 0;
+        }
+
+        function getOcupacionMesa(mesaId) {
+            const familiasEnMesa = familias.filter(f => f.mesaAsignada === mesaId);
+            return familiasEnMesa.reduce((total, f) => total + f.numeroPersonas, 0);
+        }
+
+        function getFamiliasEnMesa(mesaId) {
+            return familias.filter(f => f.mesaAsignada === mesaId);
+        }
+
+        function getEstadoMesa(mesaId) {
+            const capacidad = getCapacidadMesa(mesaId);
+            const ocupacion = getOcupacionMesa(mesaId);
+            
+            if (ocupacion === 0) return 'disponible';
+            if (ocupacion >= capacidad) return 'completa';
+            return 'parcial';
+        }
+
+        // =============================================
+        // RENDERIZADO
+        // =============================================
+        function cargarMesas() {
+            const salon = document.getElementById('salon');
+            salon.innerHTML = '';
+
+            if (MESA_PRINCIPAL.habilitada) {
+                salon.appendChild(crearMesaPrincipal());
+            }
+
+            const mesasOrdenadas = [...MESAS].sort((a, b) => a.id - b.id);
+            
+            if (mesasOrdenadas.length === 0 && !MESA_PRINCIPAL.habilitada) {
+                salon.innerHTML = `
+                    <div style="width:100%;text-align:center;padding:60px 20px;color:rgba(255,255,255,0.6);">
+                        <i class="fas fa-chair" style="font-size: 60px; display: block; margin-bottom: 20px; opacity: 0.3;"></i>
+                        <h3 style="color:#D4AF37;font-size:24px;margin-bottom:10px;">No hay mesas</h3>
+                        <p style="font-size:16px;margin-bottom:20px;">Agrega una mesa o configura la mesa principal</p>
+                        <button onclick="abrirModalAgregarMesa()" style="background:linear-gradient(145deg,#28a745,#1e7e34);color:white;border:none;padding:12px 30px;border-radius:12px;cursor:pointer;font-weight:700;font-size:16px;box-shadow:0 4px 20px rgba(40,167,69,0.3);transition:all 0.3s ease;">
+                            <i class="fas fa-plus-circle"></i> Agregar Mesa
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            mesasOrdenadas.forEach(mesa => {
+                salon.appendChild(crearMesa(mesa));
+            });
+            
+            if (modoEliminar) {
+                aplicarModoEliminacion();
+            }
+
+            actualizarPanel();
+        }
+
+        function crearMesaPrincipal() {
+            const div = document.createElement('div');
+            div.className = 'mesa-principal';
+            div.id = `mesa-${MESA_PRINCIPAL.id}`;
+            
+            const estado = getEstadoMesa(MESA_PRINCIPAL.id);
+            if (estado === 'completa') div.classList.add('completa');
+            else if (estado === 'parcial') div.classList.add('parcial');
+            else div.classList.add('disponible');
+            
+            if (modoEliminar) div.classList.add('modo-eliminar');
+
+            const numero = document.createElement('div');
+            numero.className = 'numero';
+            numero.textContent = `⭐ ${MESA_PRINCIPAL.id}`;
+            div.appendChild(numero);
+
+            const capacidad = document.createElement('div');
+            capacidad.className = 'capacidad';
+            capacidad.textContent = `👥 ${MESA_PRINCIPAL.capacidad}`;
+            div.appendChild(capacidad);
+
+            const ocupacion = getOcupacionMesa(MESA_PRINCIPAL.id);
+            const contador = document.createElement('div');
+            contador.className = 'contador-ocupacion';
+            contador.textContent = `👤 ${ocupacion}/${MESA_PRINCIPAL.capacidad}`;
+            div.appendChild(contador);
+
+            const btnEliminar = document.createElement('button');
+            btnEliminar.className = 'btn-eliminar-mesa';
+            if (modoEliminar) btnEliminar.classList.add('visible');
+            btnEliminar.textContent = '×';
+            btnEliminar.onclick = (e) => {
+                e.stopPropagation();
+                eliminarMesaDirecta(MESA_PRINCIPAL.id);
+            };
+            div.appendChild(btnEliminar);
+
+            const familiasEnMesa = getFamiliasEnMesa(MESA_PRINCIPAL.id);
+            if (familiasEnMesa.length > 0) {
+                const info = document.createElement('div');
+                info.className = 'info-familia';
+                const nombres = familiasEnMesa.map(f => `${f.nombre}(${f.numeroPersonas})`).join(', ');
+                info.textContent = `${familiasEnMesa.length} familias: ${nombres}`;
+                div.appendChild(info);
+            }
+
+            const sillas = generarSillasMesaPrincipal();
+            sillas.forEach(s => div.appendChild(s));
+
+            div.addEventListener('click', () => {
+                if (modoEliminar) { 
+                    eliminarMesaDirecta(MESA_PRINCIPAL.id);
+                    return; 
+                }
+                mostrarInfoMesa(MESA_PRINCIPAL.id);
+            });
+
+            return div;
+        }
+
+        function crearMesa(mesa) {
+            const div = document.createElement('div');
+            div.className = mesa.tipo;
+            div.id = `mesa-${mesa.id}`;
+            
+            const estado = getEstadoMesa(mesa.id);
+            if (estado === 'completa') div.classList.add('completa');
+            else if (estado === 'parcial') div.classList.add('parcial');
+            else div.classList.add('disponible');
+            
+            if (modoEliminar) div.classList.add('modo-eliminar');
+
+            const numero = document.createElement('div');
+            numero.className = 'numero';
+            numero.textContent = mesa.id;
+            div.appendChild(numero);
+
+            const ocupacion = getOcupacionMesa(mesa.id);
+            const contador = document.createElement('div');
+            contador.className = 'contador-ocupacion';
+            contador.textContent = `👤 ${ocupacion}/${mesa.sillas}`;
+            div.appendChild(contador);
+
+            const btnEliminar = document.createElement('button');
+            btnEliminar.className = 'btn-eliminar-mesa';
+            if (modoEliminar) btnEliminar.classList.add('visible');
+            btnEliminar.textContent = '×';
+            btnEliminar.onclick = (e) => {
+                e.stopPropagation();
+                eliminarMesaDirecta(mesa.id);
+            };
+            div.appendChild(btnEliminar);
+
+            const familiasEnMesa = getFamiliasEnMesa(mesa.id);
+            if (familiasEnMesa.length > 0) {
+                const info = document.createElement('div');
+                info.className = 'info-familia';
+                const nombres = familiasEnMesa.map(f => `${f.nombre}(${f.numeroPersonas})`).join(', ');
+                info.textContent = `${familiasEnMesa.length} familias: ${nombres}`;
+                div.appendChild(info);
+            }
+
+            const sillas = generarSillas(mesa.tipo, mesa.id);
+            sillas.forEach(s => div.appendChild(s));
+
+            div.addEventListener('click', () => {
+                if (modoEliminar) { 
+                    eliminarMesaDirecta(mesa.id);
+                    return; 
+                }
+                mostrarInfoMesa(mesa.id);
+            });
+
+            return div;
+        }
+
+        function aplicarModoEliminacion() {
+            document.querySelectorAll('.btn-eliminar-mesa').forEach(b => b.classList.add('visible'));
+            document.querySelectorAll('.rectangular, .cuadrada, .redonda, .mesa-principal').forEach(m => m.classList.add('modo-eliminar'));
+        }
+
+        function generarSillas(tipo, mesaId) {
+            const sillas = [];
+            let totalSillas = 0;
+            
+            if (tipo === 'rectangular') totalSillas = 6;
+            else if (tipo === 'cuadrada') totalSillas = 4;
+            else if (tipo === 'redonda') totalSillas = 10;
+            
+            const ocupacion = getOcupacionMesa(mesaId);
+            let posiciones = [];
+
+            if (tipo === 'rectangular') {
+                posiciones = [
+                    { top: '-10px', left: '55px' },
+                    { top: '-10px', right: '55px' },
+                    { bottom: '-10px', left: '55px' },
+                    { bottom: '-10px', right: '55px' },
+                    { left: '-10px', top: '50px' },
+                    { right: '-10px', top: '50px' }
+                ];
+            } else if (tipo === 'cuadrada') {
+                posiciones = [
+                    { top: '-10px', left: '58px' },
+                    { bottom: '-10px', left: '58px' },
+                    { left: '-10px', top: '58px' },
+                    { right: '-10px', top: '58px' }
+                ];
+            } else if (tipo === 'redonda') {
+                const centroX = 95, centroY = 95;
+                const radio = 80;
+                for (let i = 0; i < 10; i++) {
+                    const angulo = (i / 10) * 2 * Math.PI - Math.PI / 2;
+                    const x = centroX + radio * Math.cos(angulo) - 9;
+                    const y = centroY + radio * Math.sin(angulo) - 9;
+                    posiciones.push({
+                        left: x + 'px',
+                        top: y + 'px'
+                    });
+                }
+            }
+
+            posiciones.forEach((pos, index) => {
+                const silla = document.createElement('div');
+                silla.className = 'silla';
+                
+                if (index < ocupacion) {
+                    silla.classList.add('ocupada');
+                } else {
+                    silla.classList.add('disponible');
+                }
+                
+                Object.keys(pos).forEach(key => silla.style[key] = pos[key]);
+                
+                silla.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (modoEliminar) {
+                        eliminarMesaDirecta(mesaId);
+                        return;
+                    }
+                    mostrarInfoMesa(mesaId);
+                });
+                
+                sillas.push(silla);
+            });
+
+            return sillas;
+        }
+
+        function generarSillasMesaPrincipal() {
+            const sillas = [];
+            const total = Math.min(MESA_PRINCIPAL.capacidad, 12);
+            const ocupacion = getOcupacionMesa(MESA_PRINCIPAL.id);
+            const filas = Math.ceil(total / 4);
+            const cols = Math.min(4, total);
+            
+            const posiciones = [];
+            const ancho = 270, alto = 160;
+            const mx = 15, my = 15;
+            const ex = (ancho - 2 * mx) / (cols + 1);
+            const ey = (alto - 2 * my) / (filas + 1);
+
+            for (let i = 0; i < Math.min(cols, total); i++) {
+                posiciones.push({ top: '-10px', left: `${mx + (i + 1) * ex - 9}px` });
+            }
+            let count = posiciones.length;
+            for (let i = 0; i < Math.min(cols, total - count); i++) {
+                posiciones.push({ bottom: '-10px', left: `${mx + (i + 1) * ex - 9}px` });
+            }
+            count = posiciones.length;
+            for (let i = 0; i < Math.min(filas, total - count); i++) {
+                posiciones.push({ left: '-10px', top: `${my + (i + 1) * ey - 9}px` });
+            }
+            count = posiciones.length;
+            for (let i = 0; i < Math.min(filas, total - count); i++) {
+                posiciones.push({ right: '-10px', top: `${my + (i + 1) * ey - 9}px` });
+            }
+
+            posiciones.forEach((pos, index) => {
+                const silla = document.createElement('div');
+                silla.className = 'silla';
+                
+                if (index < ocupacion) {
+                    silla.classList.add('ocupada');
+                } else {
+                    silla.classList.add('disponible');
+                }
+                
+                Object.keys(pos).forEach(key => silla.style[key] = pos[key]);
+                
+                silla.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (modoEliminar) {
+                        eliminarMesaDirecta(MESA_PRINCIPAL.id);
+                        return;
+                    }
+                    mostrarInfoMesa(MESA_PRINCIPAL.id);
+                });
+                
+                sillas.push(silla);
+            });
+
+            return sillas;
+        }
+
+        // =============================================
+        // SUGERENCIAS
+        // =============================================
+        function mostrarSugerencias() {
+            const personas = parseInt(document.getElementById('numeroPersonas').value);
+            const contenedor = document.getElementById('sugerencias');
+            
+            if (!personas || personas < 1) {
+                contenedor.style.display = 'none';
+                return;
+            }
+
+            let disponibles = [];
+            
+            if (MESA_PRINCIPAL.habilitada) {
+                const ocupacion = getOcupacionMesa(MESA_PRINCIPAL.id);
+                const disponiblesMp = MESA_PRINCIPAL.capacidad - ocupacion;
+                if (disponiblesMp >= personas) {
+                    disponibles.push({ 
+                        id: MESA_PRINCIPAL.id, 
+                        tipo: 'principal', 
+                        sillas: MESA_PRINCIPAL.capacidad,
+                        disponibles: disponiblesMp
+                    });
+                }
+            }
+            
+            MESAS.forEach(m => {
+                const ocupacion = getOcupacionMesa(m.id);
+                const disponiblesMesa = m.sillas - ocupacion;
+                if (disponiblesMesa >= personas) {
+                    disponibles.push({ 
+                        ...m, 
+                        disponibles: disponiblesMesa
+                    });
+                }
+            });
+
+            disponibles.sort((a, b) => a.disponibles - b.disponibles);
+            
+            if (disponibles.length === 0) {
+                contenedor.style.display = 'block';
+                contenedor.innerHTML = `
+                    <div style="background:rgba(255,193,7,0.15);padding:12px;border-radius:10px;border-left:3px solid #ffc107;font-size:13px;">
+                        <strong style="color:#ffc107;"><i class="fas fa-exclamation-triangle"></i> No hay mesas con ${personas} asientos disponibles</strong>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div style="background:rgba(23,162,184,0.15);padding:14px;border-radius:12px;border-left:3px solid #17a2b8;font-size:13px;">
+                    <strong style="color:#17a2b8;"><i class="fas fa-lightbulb"></i> Mesas con ${personas} asientos disponibles:</strong>
+                    <div style="margin-top:8px;">
+            `;
+
+            disponibles.slice(0, 3).forEach((m, i) => {
+                let nombre = '';
+                if (m.tipo === 'principal') nombre = '⭐ Mesa Principal';
+                else if (m.tipo === 'redonda') nombre = `🔵 Mesa ${m.id} (Redonda)`;
+                else if (m.tipo === 'rectangular') nombre = `📐 Mesa ${m.id} (Rectangular)`;
+                else nombre = `⬛ Mesa ${m.id} (Cuadrada)`;
+                
+                html += `
+                    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span>${nombre}</span>
+                        <span style="color:#4CAF50;">${m.disponibles} asientos libres ${i === 0 ? '<i class="fas fa-check-circle" style="color:#FFD700;"></i>' : ''}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+            contenedor.style.display = 'block';
+            contenedor.innerHTML = html;
+        }
+
+        // =============================================
+        // ELIMINACIÓN DIRECTA
+        // =============================================
+        function toggleModoEliminar() {
+            modoEliminar = !modoEliminar;
+            const btn = document.querySelector('.btn-eliminar');
+            
+            if (modoEliminar) {
+                btn.classList.add('activo');
+                btn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+                document.querySelectorAll('.btn-eliminar-mesa').forEach(b => b.classList.add('visible'));
+                document.querySelectorAll('.rectangular, .cuadrada, .redonda, .mesa-principal').forEach(m => m.classList.add('modo-eliminar'));
+                document.getElementById('info').innerHTML = `
+                    <div style="background:rgba(220,53,69,0.2);padding:15px;border-radius:12px;border-left:4px solid #dc3545;font-size:13px;">
+                        <strong style="color:#FF6B6B;"><i class="fas fa-trash-alt"></i> Modo Eliminación Activado</strong>
+                        <div style="margin-top:4px;">Click en <strong style="color:#FF6B6B;font-size:18px;">×</strong> para eliminar cualquier mesa</div>
+                    </div>
+                `;
+            } else {
+                btn.classList.remove('activo');
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i> Eliminar Mesa';
+                document.querySelectorAll('.btn-eliminar-mesa').forEach(b => b.classList.remove('visible'));
+                document.querySelectorAll('.rectangular, .cuadrada, .redonda, .mesa-principal').forEach(m => m.classList.remove('modo-eliminar'));
+                cargarMesas();
+            }
+        }
+
+        function eliminarMesaDirecta(mesaId) {
+            const familiasEliminadas = familias.filter(f => f.mesaAsignada === mesaId);
+            familias = familias.filter(f => f.mesaAsignada !== mesaId);
+            
+            if (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === mesaId) {
+                MESA_PRINCIPAL.habilitada = false;
+            } else {
+                MESAS = MESAS.filter(m => m.id !== mesaId);
+            }
+            
+            guardarEnFirebase();
+            
+            const el = document.getElementById(`mesa-${mesaId}`);
+            if (el) el.remove();
+            
+            cargarOpcionesMesas();
+            
+            const mensaje = familiasEliminadas.length > 0
+                ? `✅ Mesa ${mesaId} eliminada. ${familiasEliminadas.length} familias liberadas.`
+                : `✅ Mesa ${mesaId} eliminada.`;
+            
+            document.getElementById('info').innerHTML = `
+                <div style="background:rgba(76,175,80,0.2);padding:15px;border-radius:12px;border-left:4px solid #4CAF50;font-size:13px;">
+                    <strong style="color:#4CAF50;"><i class="fas fa-check-circle"></i> ${mensaje}</strong>
+                </div>
+            `;
+            
+            if (MESAS.length === 0 && !MESA_PRINCIPAL.habilitada) {
+                cargarMesas();
+            }
+            
+            if (modoEliminar && MESAS.length === 0 && !MESA_PRINCIPAL.habilitada) {
+                toggleModoEliminar();
+            }
+        }
+
+        // =============================================
+        // CONFIGURAR MESA PRINCIPAL
+        // =============================================
+        function configurarMesaPrincipal() {
+            document.getElementById('capacidadMesaPrincipal').value = MESA_PRINCIPAL.capacidad || 8;
+            document.getElementById('numeroMesaPrincipal').value = MESA_PRINCIPAL.id || 0;
+            document.getElementById('modalMesaPrincipal').classList.add('active');
+        }
+
+        document.getElementById('formMesaPrincipal').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const capacidad = parseInt(document.getElementById('capacidadMesaPrincipal').value);
+            const numero = parseInt(document.getElementById('numeroMesaPrincipal').value);
+
+            if (!capacidad || capacidad < 1) { alert('Capacidad inválida'); return; }
+            if (numero < 0) { alert('Número inválido'); return; }
+            if (numero !== 0 && MESAS.some(m => m.id === numero)) {
+                alert(`El número ${numero} ya está ocupado`);
+                return;
+            }
+
+            MESA_PRINCIPAL.id = numero;
+            MESA_PRINCIPAL.capacidad = capacidad;
+            MESA_PRINCIPAL.habilitada = true;
+            
+            guardarEnFirebase();
+            cerrarModal('modalMesaPrincipal');
+            cargarMesas();
+            cargarOpcionesMesas();
+            alert(`✅ Mesa Principal configurada`);
+        });
+
+        // =============================================
+        // AGREGAR MESA
+        // =============================================
+        function abrirModalAgregarMesa() {
+            document.getElementById('modalAgregarMesa').classList.add('active');
+            document.getElementById('numeroMesa').value = '';
+            document.getElementById('numeroMesa').focus();
+        }
+
+        document.getElementById('formMesa').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const tipo = document.getElementById('tipoMesa').value;
+            const numero = parseInt(document.getElementById('numeroMesa').value);
+
+            if (!numero || numero < 1) { alert('Número inválido'); return; }
+            if (MESAS.some(m => m.id === numero)) { alert(`Ya existe la mesa ${numero}`); return; }
+            if (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === numero) { alert('Número ocupado por Mesa Principal'); return; }
+
+            let sillas = 0;
+            if (tipo === 'rectangular') sillas = 6;
+            else if (tipo === 'cuadrada') sillas = 4;
+            else if (tipo === 'redonda') sillas = 10;
+
+            MESAS.push({ id: numero, tipo, sillas });
+            guardarEnFirebase();
+            cerrarModal('modalAgregarMesa');
+            cargarMesas();
+            cargarOpcionesMesas();
+            alert(`✅ Mesa ${numero} (${tipo}) agregada con ${sillas} sillas`);
+        });
+
+        // =============================================
+        // AGREGAR FAMILIA
+        // =============================================
+        function abrirModalAgregarFamilia() {
+            document.getElementById('modalAgregarFamilia').classList.add('active');
+            document.getElementById('sugerencias').style.display = 'none';
+            document.getElementById('formFamilia').reset();
+            cargarOpcionesMesasDisponibles();
+        }
+
+        document.getElementById('formFamilia').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('nombre').value.trim();
+            const numeroPersonas = parseInt(document.getElementById('numeroPersonas').value);
+            const mesaAsignada = parseInt(document.getElementById('mesaAsignada').value);
+
+            if (!nombre) { alert('❌ Ingrese el nombre'); return; }
+            if (!numeroPersonas || numeroPersonas < 1) { alert('❌ Ingrese número de personas válido'); return; }
+            if (!mesaAsignada) { alert('❌ Seleccione una mesa'); return; }
+
+            const ocupacionActual = getOcupacionMesa(mesaAsignada);
+            const capacidad = getCapacidadMesa(mesaAsignada);
+            const espacioDisponible = capacidad - ocupacionActual;
+
+            if (numeroPersonas > espacioDisponible) {
+                alert(`❌ La mesa solo tiene ${espacioDisponible} asientos disponibles. ${numeroPersonas} no caben.`);
+                return;
+            }
+
+            const nuevaFamilia = {
+                id: nextId++,
+                nombre: nombre,
+                numeroPersonas: numeroPersonas,
+                mesaAsignada: mesaAsignada,
+                fechaRegistro: new Date().toISOString()
+            };
+
+            familias.push(nuevaFamilia);
+            guardarEnFirebase();
+
+            alert(`✅ Familia "${nombre}" registrada en Mesa ${mesaAsignada}`);
+            cerrarModal('modalAgregarFamilia');
+            document.getElementById('formFamilia').reset();
+            document.getElementById('sugerencias').style.display = 'none';
+            cargarMesas();
+            cargarOpcionesMesas();
+        });
+
+        // =============================================
+        // OPCIONES DE MESAS
+        // =============================================
+        function cargarOpcionesMesas() {
+            const select = document.getElementById('mesaAsignada');
+            
+            while (select.options.length > 1) select.remove(1);
+
+            let disponibles = [];
+            
+            if (MESA_PRINCIPAL.habilitada) {
+                const ocupacion = getOcupacionMesa(MESA_PRINCIPAL.id);
+                const disponiblesMp = MESA_PRINCIPAL.capacidad - ocupacion;
+                if (disponiblesMp > 0) {
+                    disponibles.push({ 
+                        id: MESA_PRINCIPAL.id, 
+                        tipo: 'principal', 
+                        sillas: MESA_PRINCIPAL.capacidad,
+                        disponibles: disponiblesMp
+                    });
+                }
+            }
+            
+            MESAS.forEach(m => {
+                const ocupacion = getOcupacionMesa(m.id);
+                const disponiblesMesa = m.sillas - ocupacion;
+                if (disponiblesMesa > 0) {
+                    disponibles.push({ 
+                        ...m, 
+                        disponibles: disponiblesMesa
+                    });
+                }
+            });
+
+            disponibles.sort((a, b) => a.id - b.id);
+
+            if (disponibles.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = '❌ No hay mesas con espacio disponible';
+                opt.disabled = true;
+                select.appendChild(opt);
+            } else {
+                disponibles.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    let nombre = '';
+                    if (m.tipo === 'principal') nombre = `⭐ Mesa Principal (${m.sillas})`;
+                    else if (m.tipo === 'redonda') nombre = `🔵 Mesa ${m.id} Redonda (${m.sillas})`;
+                    else if (m.tipo === 'rectangular') nombre = `📐 Mesa ${m.id} Rectangular (${m.sillas})`;
+                    else nombre = `⬛ Mesa ${m.id} Cuadrada (${m.sillas})`;
+                    opt.textContent = `${nombre} - ${m.disponibles} libres`;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        function cargarOpcionesMesasDisponibles() {
+            cargarOpcionesMesas();
+        }
+
+        // =============================================
+        // MOSTRAR INFO DE MESA
+        // =============================================
+        function mostrarInfoMesa(mesaId) {
+            const capacidad = getCapacidadMesa(mesaId);
+            const ocupacion = getOcupacionMesa(mesaId);
+            const familiasEnMesa = getFamiliasEnMesa(mesaId);
+            const estado = getEstadoMesa(mesaId);
+            const mesa = MESAS.find(m => m.id === mesaId);
+            
+            let estadoTexto = '';
+            let estadoColor = '';
+            let tipoTexto = '';
+            
+            if (estado === 'disponible') {
+                estadoTexto = '✅ Disponible';
+                estadoColor = '#4CAF50';
+            } else if (estado === 'parcial') {
+                estadoTexto = '🟡 Parcialmente ocupada';
+                estadoColor = '#FF9800';
+            } else {
+                estadoTexto = '🔴 Completamente ocupada';
+                estadoColor = '#f44336';
+            }
+
+            if (mesa) {
+                if (mesa.tipo === 'redonda') tipoTexto = '🔵 Redonda';
+                else if (mesa.tipo === 'rectangular') tipoTexto = '📐 Rectangular';
+                else if (mesa.tipo === 'cuadrada') tipoTexto = '⬛ Cuadrada';
+            } else {
+                tipoTexto = '⭐ Principal';
+            }
+            
+            let html = `
+                <div class="familia-item">
+                    <strong>🪑 Mesa ${mesaId} - ${tipoTexto}</strong>
+                    <div class="detalle">
+                        ${estadoTexto}<br>
+                        👥 ${ocupacion} de ${capacidad} asientos ocupados<br>
+                        🟢 ${capacidad - ocupacion} asientos disponibles
+                    </div>
+            `;
+            
+            if (familiasEnMesa.length > 0) {
+                html += `<div class="lista-familias-mesa">`;
+                familiasEnMesa.forEach(f => {
+                    html += `<div class="fam">👨‍👩‍👧‍👦 ${f.nombre} (${f.numeroPersonas} personas)</div>`;
+                });
+                html += `</div>`;
+            }
+            
+            html += `</div>`;
+            document.getElementById('info').innerHTML = html;
+        }
+
+        function actualizarPanel() {
+            if (modoEliminar) return;
+            const mesasConFamilias = [...new Set(familias.map(f => f.mesaAsignada))];
+            if (mesasConFamilias.length > 0) {
+                mostrarInfoMesa(mesasConFamilias[0]);
+            } else {
+                document.getElementById('info').innerHTML = `
+                    <div class="mensaje-inicial">
+                        <i class="fas fa-users" style="font-size: 40px; display: block; margin-bottom: 15px; opacity: 0.4;"></i>
+                        No hay familias registradas
+                    </div>
+                `;
+            }
+        }
+
+        // =============================================
+        // BUSCAR
+        // =============================================
+        function buscar() {
+            const termino = document.getElementById('terminoBusqueda').value.trim().toLowerCase();
+            const contenedor = document.getElementById('resultadosBusqueda');
+
+            if (!termino) { alert('Ingrese un nombre'); return; }
+
+            const resultados = familias.filter(f => 
+                f.nombre.toLowerCase().includes(termino) || 
+                f.mesaAsignada.toString() === termino
+            );
+
+            if (resultados.length === 0) {
+                contenedor.innerHTML = `<div style="text-align:center;padding:20px;color:rgba(255,255,255,0.5);"><i class="fas fa-search" style="font-size: 30px; display: block; margin-bottom: 10px; opacity: 0.3;"></i> No se encontraron resultados</div>`;
+                return;
+            }
+
+            let html = '';
+            resultados.forEach(f => {
+                html += `
+                    <div class="resultado-item" data-familia='${JSON.stringify(f).replace(/'/g, "&#39;")}'>
+                        <strong><i class="fas fa-user-friends"></i> ${f.nombre}</strong>
+                        <div class="detalle">📍 Mesa ${f.mesaAsignada} | 👥 ${f.numeroPersonas} personas</div>
+                    </div>
+                `;
+            });
+            contenedor.innerHTML = html;
+
+            document.querySelectorAll('.resultado-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    try {
+                        const familia = JSON.parse(this.dataset.familia);
+                        mostrarInfoMesa(familia.mesaAsignada);
+                        cerrarModal('modalBuscar');
+                    } catch (e) {
+                        console.error('Error al parsear:', e);
+                    }
+                });
+            });
+        }
+
+        document.getElementById('terminoBusqueda').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscar();
+        });
+
+        // =============================================
+        // VER TABLA
+        // =============================================
+        function verTabla() {
+            const contenedor = document.getElementById('contenidoTabla');
+
+            if (familias.length === 0) {
+                contenedor.innerHTML = `<div style="text-align:center;padding:30px;color:rgba(255,255,255,0.5);"><i class="fas fa-table" style="font-size: 40px; display: block; margin-bottom: 15px; opacity: 0.3;"></i> No hay familias registradas</div>`;
+            } else {
+                let html = `
+                    <table class="tabla-familias">
+                        <thead><tr><th><i class="fas fa-user"></i> Familia</th><th><i class="fas fa-chair"></i> Mesa</th><th><i class="fas fa-users"></i> Personas</th><th><i class="fas fa-calendar"></i> Registro</th></tr></thead>
+                        <tbody>
+                `;
+                familias.forEach(f => {
+                    const esPrincipal = f.mesaAsignada === MESA_PRINCIPAL.id && MESA_PRINCIPAL.habilitada;
+                    let tipo = '';
+                    const mesa = MESAS.find(m => m.id === f.mesaAsignada);
+                    if (mesa) {
+                        if (mesa.tipo === 'redonda') tipo = '🔵';
+                        else if (mesa.tipo === 'rectangular') tipo = '📐';
+                        else if (mesa.tipo === 'cuadrada') tipo = '⬛';
+                    }
+                    html += `
+                        <tr>
+                            <td><strong>${f.nombre}</strong></td>
+                            <td>📍 ${f.mesaAsignada} ${tipo} ${esPrincipal ? '⭐' : ''}</td>
+                            <td>👥 ${f.numeroPersonas}</td>
+                            <td>${new Date(f.fechaRegistro).toLocaleDateString()}</td>
+                        </tr>
+                    `;
+                });
+                html += `
+                        </tbody>
+                    </table>
+                    <div style="margin-top:12px;text-align:right;color:rgba(255,255,255,0.4);font-size:13px;">
+                        <i class="fas fa-users"></i> Total: ${familias.length} familias
+                    </div>
+                `;
+                contenedor.innerHTML = html;
+            }
+            document.getElementById('modalTabla').classList.add('active');
+        }
+
+        // =============================================
+        // RECARGAR
+        // =============================================
+        async function recargarMesas() {
+            await cargarDesdeFirebase();
+            cargarMesas();
+            cargarOpcionesMesas();
+            alert('🔄 Datos recargados desde Firebase');
+        }
+
+        // =============================================
+        // MODALES
+        // =============================================
+        function abrirModalBuscar() {
+            document.getElementById('modalBuscar').classList.add('active');
+            document.getElementById('terminoBusqueda').value = '';
+            document.getElementById('resultadosBusqueda').innerHTML = '';
+            setTimeout(() => document.getElementById('terminoBusqueda').focus(), 100);
+        }
+
+        function cerrarModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+
+        // =============================================
+        // INICIO
+        // =============================================
+        console.log('✅ Sistema Moderno con Firebase');
+        console.log('🎨 Diseño premium con iconos y efectos');
+        console.log('💾 Los datos se guardan en Firebase Realtime Database');
+        console.log('🔄 Ambos usuarios ven los cambios en tiempo real (cada 3 segundos)');
+        console.log('🔵 Mesas redondas con capacidad de 10 personas');
+        console.log('✨ Interfaz moderna con gradientes y sombras');
+    </script>
+
+</body>
+</html>
