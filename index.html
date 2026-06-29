@@ -242,7 +242,7 @@
                 <select id="tipoMesa" required>
                     <option value="rectangular"><i class="fas fa-vector-square"></i> Rectangular (6 sillas)</option>
                     <option value="cuadrada"><i class="fas fa-square"></i> Cuadrada (4 sillas)</option>
-                    <option value="redonda"><i class="fas fa-circle"></i> Redonda (10 sillas)</option>
+                    <option value="redonda"><i class="fas fa-circle"></i> Redonda (8 sillas)</option>
                 </select>
 
                 <label><i class="fas fa-hashtag"></i> Número</label>
@@ -352,10 +352,29 @@
         }
 
         // =============================================
+        // ACTUALIZAR MESAS REDONDAS EXISTENTES A 8 SILLAS
+        // =============================================
+        async function actualizarMesasRedondas() {
+            let modificadas = false;
+            MESAS.forEach(m => {
+                if (m.tipo === 'redonda' && m.sillas !== 8) {
+                    m.sillas = 8;
+                    modificadas = true;
+                    console.log(`🔄 Mesa redonda ${m.id} actualizada de ${m.sillas} a 8 sillas`);
+                }
+            });
+            if (modificadas) {
+                await guardarEnFirebase();
+                console.log('✅ Mesas redondas actualizadas a 8 sillas');
+            }
+        }
+
+        // =============================================
         // INICIALIZACIÓN
         // =============================================
         document.addEventListener('DOMContentLoaded', async function() {
             await cargarDesdeFirebase();
+            await actualizarMesasRedondas(); // <-- CORRECCIÓN: Actualiza mesas existentes
             cargarMesas();
             cargarOpcionesMesas();
             
@@ -374,7 +393,7 @@
                 }
             }, 3000);
             
-            console.log('✅ Sistema con modificar mesa principal');
+            console.log('✅ Sistema con mesas redondas de 8 sillas');
             console.log(`📊 ${MESAS.length} mesas`);
             console.log(`👨‍👩‍👧‍👦 ${familias.length} familias`);
         });
@@ -409,7 +428,7 @@
         }
 
         // =============================================
-        // MODIFICAR MESA PRINCIPAL - NUEVA FUNCIÓN
+        // MODIFICAR MESA PRINCIPAL
         // =============================================
         function abrirModalModificarMesaPrincipal() {
             if (!MESA_PRINCIPAL.habilitada) {
@@ -448,13 +467,11 @@
                 return; 
             }
 
-            // Verificar que el número no esté ocupado por otra mesa (si cambió el número)
             if (nuevoNumero !== MESA_PRINCIPAL.id && MESAS.some(m => m.id === nuevoNumero)) {
                 alert(`❌ El número ${nuevoNumero} ya está ocupado por otra mesa`);
                 return;
             }
 
-            // Verificar que no haya familias en el nuevo número (si cambió)
             if (nuevoNumero !== MESA_PRINCIPAL.id) {
                 const familiasEnNuevo = familias.filter(f => f.mesaAsignada === nuevoNumero);
                 if (familiasEnNuevo.length > 0) {
@@ -463,14 +480,12 @@
                 }
             }
 
-            // Verificar que la nueva capacidad sea suficiente para las familias actuales
             const ocupacionActual = getOcupacionMesa(MESA_PRINCIPAL.id);
             if (nuevaCapacidad < ocupacionActual) {
                 alert(`❌ La nueva capacidad (${nuevaCapacidad}) es menor que las personas actuales (${ocupacionActual}). No se puede reducir.`);
                 return;
             }
 
-            // Actualizar el número de mesa de las familias si cambió
             if (nuevoNumero !== MESA_PRINCIPAL.id) {
                 familias.forEach(f => {
                     if (f.mesaAsignada === MESA_PRINCIPAL.id) {
@@ -479,7 +494,6 @@
                 });
             }
 
-            // Actualizar la mesa principal
             MESA_PRINCIPAL.id = nuevoNumero;
             MESA_PRINCIPAL.capacidad = nuevaCapacidad;
             MESA_PRINCIPAL.habilitada = true;
@@ -664,7 +678,7 @@
             
             if (tipo === 'rectangular') totalSillas = 6;
             else if (tipo === 'cuadrada') totalSillas = 4;
-            else if (tipo === 'redonda') totalSillas = 10;
+            else if (tipo === 'redonda') totalSillas = 8;
             
             const ocupacion = getOcupacionMesa(mesaId);
             let posiciones = [];
@@ -688,8 +702,8 @@
             } else if (tipo === 'redonda') {
                 const centroX = 85, centroY = 85;
                 const radio = 70;
-                for (let i = 0; i < 10; i++) {
-                    const angulo = (i / 10) * 2 * Math.PI - Math.PI / 2;
+                for (let i = 0; i < 8; i++) {
+                    const angulo = (i / 8) * 2 * Math.PI - Math.PI / 2;
                     const x = centroX + radio * Math.cos(angulo) - 8;
                     const y = centroY + radio * Math.sin(angulo) - 8;
                     posiciones.push({
@@ -1249,7 +1263,7 @@
             let sillas = 0;
             if (tipo === 'rectangular') sillas = 6;
             else if (tipo === 'cuadrada') sillas = 4;
-            else if (tipo === 'redonda') sillas = 10;
+            else if (tipo === 'redonda') sillas = 8;
 
             MESAS.push({ id: numero, tipo, sillas });
             await guardarEnFirebase();
@@ -1375,6 +1389,7 @@
         // =============================================
         async function recargarMesas() {
             await cargarDesdeFirebase();
+            await actualizarMesasRedondas();
             cargarMesas();
             cargarOpcionesMesas();
             alert('🔄 Datos recargados desde Firebase');
@@ -1434,7 +1449,7 @@
         // =============================================
         // INICIO
         // =============================================
-        console.log('✅ Sistema con modificar mesa principal');
+        console.log('✅ Sistema con mesas redondas de 8 sillas');
         console.log('📝 Modifica capacidad y número de la mesa principal');
         console.log('💾 Los datos se guardan en Firebase');
         console.log('🔄 Actualización automática cada 3 segundos');
