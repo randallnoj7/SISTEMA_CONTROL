@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <style>
-        /* ===== RESET Y BASE ===== */
         * {
             margin: 0;
             padding: 0;
@@ -26,7 +25,6 @@
             min-height: 100vh;
         }
 
-        /* ===== HEADER ===== */
         header {
             width: 100%;
             height: 200px;
@@ -51,7 +49,6 @@
             object-fit: cover;
         }
 
-        /* ===== MENÚ ===== */
         .menu {
             background: rgba(123, 17, 19, 0.95);
             backdrop-filter: blur(10px);
@@ -92,10 +89,6 @@
             transform: translateY(-3px) scale(1.03);
             box-shadow: 0 8px 25px rgba(212, 175, 55, 0.5);
             background: linear-gradient(145deg, #e8c84a, #D4AF37);
-        }
-
-        .menu button:active {
-            transform: scale(0.95);
         }
 
         .menu .btn-eliminar {
@@ -172,7 +165,6 @@
             box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
         }
 
-        /* ===== CONTENEDOR ===== */
         #contenedor {
             display: flex;
             justify-content: space-between;
@@ -247,7 +239,6 @@
             margin-bottom: 20px;
         }
 
-        /* ===== MESAS ===== */
         .rectangular, .cuadrada, .redonda, .mesa-principal {
             position: relative;
             background: radial-gradient(ellipse at 30% 30%, #f8f5e9, #e8e0d0);
@@ -456,7 +447,6 @@
             display: block;
         }
 
-        /* ===== SILLAS ===== */
         .silla {
             width: 18px;
             height: 18px;
@@ -510,7 +500,6 @@
             background: rgba(0,0,0,0.3);
         }
 
-        /* ===== PANEL INFO ===== */
         #info {
             color: #f0f0f0;
             line-height: 1.6;
@@ -552,7 +541,6 @@
             margin-top: 4px;
         }
 
-        /* ===== MODALES ===== */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -691,7 +679,6 @@
             transform: translateY(-2px);
         }
 
-        /* ===== TABLA ===== */
         .tabla-familias {
             width: 100%;
             border-collapse: collapse;
@@ -716,7 +703,6 @@
             background: rgba(255,255,255,0.05);
         }
 
-        /* ===== RESULTADOS BÚSQUEDA ===== */
         .resultado-item {
             padding: 12px;
             margin-bottom: 6px;
@@ -746,7 +732,6 @@
             border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
             #contenedor {
                 flex-direction: column;
@@ -798,38 +783,18 @@
         <img src="https://i.postimg.cc/3xW0KRtb/BANNER-2.jpg" alt="Banner">
     </header>
 
-    <!-- ===== MENÚ ===== -->
     <div class="menu">
-        <button onclick="abrirModalAgregarFamilia()">
-            <i class="fas fa-user-plus"></i> Agregar Familia
-        </button>
-        <button onclick="abrirModalBuscar()">
-            <i class="fas fa-search"></i> Buscar
-        </button>
-        <button onclick="verTabla()">
-            <i class="fas fa-table"></i> Ver Tabla
-        </button>
-        <button onclick="recargarMesas()">
-            <i class="fas fa-sync-alt"></i> Recargar
-        </button>
-        <button class="btn-mesa-principal" onclick="configurarMesaPrincipal()">
-            <i class="fas fa-star"></i> Mesa Principal
-        </button>
-        <button class="btn-agregar-mesa" onclick="abrirModalAgregarMesa()">
-            <i class="fas fa-plus-circle"></i> Agregar Mesa
-        </button>
-        <button class="btn-eliminar" onclick="toggleModoEliminar()">
-            <i class="fas fa-trash-alt"></i> Eliminar Mesa
-        </button>
-        <button class="btn-limpiar" onclick="limpiarTodo()">
-            <i class="fas fa-broom"></i> Limpiar Todo
-        </button>
-        <button class="btn-estado" id="btnEstado">
-            <i class="fas fa-circle"></i> Conectado
-        </button>
+        <button onclick="abrirModalAgregarFamilia()"><i class="fas fa-user-plus"></i> Agregar Familia</button>
+        <button onclick="abrirModalBuscar()"><i class="fas fa-search"></i> Buscar</button>
+        <button onclick="verTabla()"><i class="fas fa-table"></i> Ver Tabla</button>
+        <button onclick="recargarMesas()"><i class="fas fa-sync-alt"></i> Recargar</button>
+        <button class="btn-mesa-principal" onclick="configurarMesaPrincipal()"><i class="fas fa-star"></i> Mesa Principal</button>
+        <button class="btn-agregar-mesa" onclick="abrirModalAgregarMesa()"><i class="fas fa-plus-circle"></i> Agregar Mesa</button>
+        <button class="btn-eliminar" onclick="toggleModoEliminar()"><i class="fas fa-trash-alt"></i> Eliminar Mesa</button>
+        <button class="btn-limpiar" onclick="limpiarTodo()"><i class="fas fa-broom"></i> Limpiar Todo</button>
+        <button class="btn-estado" id="btnEstado"><i class="fas fa-circle"></i> Conectado</button>
     </div>
 
-    <!-- ===== CONTENIDO ===== -->
     <div id="contenedor">
         <div id="salon"></div>
         <div id="panel">
@@ -1579,7 +1544,7 @@
         });
 
         // =============================================
-        // AGREGAR FAMILIA
+        // AGREGAR FAMILIA - CORREGIDO
         // =============================================
         function abrirModalAgregarFamilia() {
             document.getElementById('modalAgregarFamilia').classList.add('active');
@@ -1628,7 +1593,7 @@
         });
 
         // =============================================
-        // OPCIONES DE MESAS
+        // OPCIONES DE MESAS - CORREGIDO (INCLUYE MESA PRINCIPAL)
         // =============================================
         function cargarOpcionesMesas() {
             const select = document.getElementById('mesaAsignada');
@@ -1637,6 +1602,7 @@
 
             let disponibles = [];
             
+            // AGREGAR MESA PRINCIPAL PRIMERO
             if (MESA_PRINCIPAL.habilitada) {
                 const ocupacion = getOcupacionMesa(MESA_PRINCIPAL.id);
                 const disponiblesMp = MESA_PRINCIPAL.capacidad - ocupacion;
@@ -1645,18 +1611,26 @@
                         id: MESA_PRINCIPAL.id, 
                         tipo: 'principal', 
                         sillas: MESA_PRINCIPAL.capacidad,
-                        disponibles: disponiblesMp
+                        disponibles: disponiblesMp,
+                        label: `⭐ Mesa Principal (${MESA_PRINCIPAL.capacidad} asientos)`
                     });
                 }
             }
             
+            // AGREGAR MESAS NORMALES
             MESAS.forEach(m => {
                 const ocupacion = getOcupacionMesa(m.id);
                 const disponiblesMesa = m.sillas - ocupacion;
                 if (disponiblesMesa > 0) {
+                    let tipoNombre = '';
+                    if (m.tipo === 'redonda') tipoNombre = '🔵 Redonda';
+                    else if (m.tipo === 'rectangular') tipoNombre = '📐 Rectangular';
+                    else tipoNombre = '⬛ Cuadrada';
+                    
                     disponibles.push({ 
                         ...m, 
-                        disponibles: disponiblesMesa
+                        disponibles: disponiblesMesa,
+                        label: `Mesa ${m.id} ${tipoNombre} (${m.sillas} asientos)`
                     });
                 }
             });
@@ -1673,12 +1647,7 @@
                 disponibles.forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m.id;
-                    let nombre = '';
-                    if (m.tipo === 'principal') nombre = `⭐ Mesa Principal (${m.sillas})`;
-                    else if (m.tipo === 'redonda') nombre = `🔵 Mesa ${m.id} Redonda (${m.sillas})`;
-                    else if (m.tipo === 'rectangular') nombre = `📐 Mesa ${m.id} Rectangular (${m.sillas})`;
-                    else nombre = `⬛ Mesa ${m.id} Cuadrada (${m.sillas})`;
-                    opt.textContent = `${nombre} - ${m.disponibles} libres`;
+                    opt.textContent = `${m.label} - ${m.disponibles} libres`;
                     select.appendChild(opt);
                 });
             }
@@ -1699,18 +1668,14 @@
             const mesa = MESAS.find(m => m.id === mesaId);
             
             let estadoTexto = '';
-            let estadoColor = '';
             let tipoTexto = '';
             
             if (estado === 'disponible') {
                 estadoTexto = '✅ Disponible';
-                estadoColor = '#4CAF50';
             } else if (estado === 'parcial') {
                 estadoTexto = '🟡 Parcialmente ocupada';
-                estadoColor = '#FF9800';
             } else {
                 estadoTexto = '🔴 Completamente ocupada';
-                estadoColor = '#f44336';
             }
 
             if (mesa) {
@@ -1887,6 +1852,7 @@
         console.log('💾 Los datos se guardan en Firebase Realtime Database');
         console.log('🔄 Ambos usuarios ven los cambios en tiempo real (cada 3 segundos)');
         console.log('🔵 Mesas redondas con capacidad de 10 personas');
+        console.log('⭐ Mesa Principal incluida en el selector de mesas');
         console.log('✨ Interfaz moderna con gradientes y sombras');
     </script>
 
