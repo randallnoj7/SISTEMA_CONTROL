@@ -1481,7 +1481,7 @@
         }
 
         // =============================================
-        // CONFIGURAR MESA PRINCIPAL
+        // CONFIGURAR MESA PRINCIPAL - CORREGIDO
         // =============================================
         function configurarMesaPrincipal() {
             document.getElementById('capacidadMesaPrincipal').value = MESA_PRINCIPAL.capacidad || 8;
@@ -1489,27 +1489,48 @@
             document.getElementById('modalMesaPrincipal').classList.add('active');
         }
 
-        document.getElementById('formMesaPrincipal').addEventListener('submit', (e) => {
+        document.getElementById('formMesaPrincipal').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const capacidad = parseInt(document.getElementById('capacidadMesaPrincipal').value);
             const numero = parseInt(document.getElementById('numeroMesaPrincipal').value);
 
-            if (!capacidad || capacidad < 1) { alert('Capacidad inválida'); return; }
-            if (numero < 0) { alert('Número inválido'); return; }
+            if (!capacidad || capacidad < 1) { 
+                alert('❌ Capacidad inválida'); 
+                return; 
+            }
+            
+            if (numero < 0) { 
+                alert('❌ Número inválido'); 
+                return; 
+            }
+            
+            // Verificar que el número no esté ocupado por otra mesa
             if (numero !== 0 && MESAS.some(m => m.id === numero)) {
-                alert(`El número ${numero} ya está ocupado`);
+                alert(`❌ El número ${numero} ya está ocupado por otra mesa`);
                 return;
             }
 
+            // Verificar que no haya una familia en esa mesa
+            const familiasEnMesa = familias.filter(f => f.mesaAsignada === numero);
+            if (familiasEnMesa.length > 0) {
+                alert(`❌ La mesa ${numero} ya tiene ${familiasEnMesa.length} familia(s) asignada(s)`);
+                return;
+            }
+
+            // Actualizar la mesa principal
             MESA_PRINCIPAL.id = numero;
             MESA_PRINCIPAL.capacidad = capacidad;
             MESA_PRINCIPAL.habilitada = true;
             
-            guardarEnFirebase();
+            // Guardar en Firebase
+            await guardarEnFirebase();
+            
             cerrarModal('modalMesaPrincipal');
             cargarMesas();
             cargarOpcionesMesas();
-            alert(`✅ Mesa Principal configurada`);
+            
+            alert(`✅ Mesa Principal configurada con ${capacidad} asientos`);
         });
 
         // =============================================
@@ -1521,14 +1542,26 @@
             document.getElementById('numeroMesa').focus();
         }
 
-        document.getElementById('formMesa').addEventListener('submit', (e) => {
+        document.getElementById('formMesa').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const tipo = document.getElementById('tipoMesa').value;
             const numero = parseInt(document.getElementById('numeroMesa').value);
 
-            if (!numero || numero < 1) { alert('Número inválido'); return; }
-            if (MESAS.some(m => m.id === numero)) { alert(`Ya existe la mesa ${numero}`); return; }
-            if (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === numero) { alert('Número ocupado por Mesa Principal'); return; }
+            if (!numero || numero < 1) { 
+                alert('❌ Número inválido'); 
+                return; 
+            }
+            
+            if (MESAS.some(m => m.id === numero)) { 
+                alert(`❌ Ya existe la mesa ${numero}`); 
+                return; 
+            }
+            
+            if (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === numero) { 
+                alert('❌ Número ocupado por Mesa Principal'); 
+                return; 
+            }
 
             let sillas = 0;
             if (tipo === 'rectangular') sillas = 6;
@@ -1536,15 +1569,17 @@
             else if (tipo === 'redonda') sillas = 10;
 
             MESAS.push({ id: numero, tipo, sillas });
-            guardarEnFirebase();
+            await guardarEnFirebase();
+            
             cerrarModal('modalAgregarMesa');
             cargarMesas();
             cargarOpcionesMesas();
+            
             alert(`✅ Mesa ${numero} (${tipo}) agregada con ${sillas} sillas`);
         });
 
         // =============================================
-        // AGREGAR FAMILIA - CORREGIDO
+        // AGREGAR FAMILIA
         // =============================================
         function abrirModalAgregarFamilia() {
             document.getElementById('modalAgregarFamilia').classList.add('active');
@@ -1553,7 +1588,7 @@
             cargarOpcionesMesasDisponibles();
         }
 
-        document.getElementById('formFamilia').addEventListener('submit', (e) => {
+        document.getElementById('formFamilia').addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const nombre = document.getElementById('nombre').value.trim();
@@ -1582,7 +1617,7 @@
             };
 
             familias.push(nuevaFamilia);
-            guardarEnFirebase();
+            await guardarEnFirebase();
 
             alert(`✅ Familia "${nombre}" registrada en Mesa ${mesaAsignada}`);
             cerrarModal('modalAgregarFamilia');
@@ -1593,7 +1628,7 @@
         });
 
         // =============================================
-        // OPCIONES DE MESAS - CORREGIDO (INCLUYE MESA PRINCIPAL)
+        // OPCIONES DE MESAS
         // =============================================
         function cargarOpcionesMesas() {
             const select = document.getElementById('mesaAsignada');
