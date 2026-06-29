@@ -5,11 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Asignación de Mesas</title>
     
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     
     <style>
@@ -167,24 +165,20 @@
         </div>
     </div>
 
-    <!-- ===== MODALES ===== -->
+    <!-- MODALES -->
     <div class="modal-overlay" id="modalAgregarFamilia">
         <div class="modal">
             <h2><i class="fas fa-user-plus"></i> Agregar Familia</h2>
             <div>
                 <label><i class="fas fa-user"></i> Nombre *</label>
                 <input type="text" id="nombre" placeholder="Ej: Familia Pérez">
-
                 <label><i class="fas fa-users"></i> Personas *</label>
                 <input type="number" id="numeroPersonas" placeholder="Ej: 4" min="1">
-
                 <label><i class="fas fa-chair"></i> Mesa *</label>
                 <select id="mesaAsignada">
                     <option value="">Seleccione...</option>
                 </select>
-
                 <div id="sugerencias" style="margin-top:8px;display:none;"></div>
-
                 <div class="modal-buttons">
                     <button class="btn-guardar" id="btnGuardarFamilia"><i class="fas fa-save"></i> Guardar</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalAgregarFamilia')"><i class="fas fa-times"></i> Cancelar</button>
@@ -193,21 +187,17 @@
         </div>
     </div>
 
-    <!-- ===== MODAL EDITAR FAMILIA ===== -->
     <div class="modal-overlay" id="modalEditarFamilia">
         <div class="modal">
             <h2><i class="fas fa-edit"></i> Editar Familia</h2>
             <div>
                 <label><i class="fas fa-user"></i> Nombre *</label>
                 <input type="text" id="editarNombre" placeholder="Nombre de la familia">
-                
                 <input type="hidden" id="editarFamiliaId">
-                
                 <div style="background:rgba(23,162,184,0.15);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;border-left:3px solid #17a2b8;">
                     <strong style="color:#17a2b8;">Información actual:</strong><br>
                     <span id="editarInfoActual">Cargando...</span>
                 </div>
-
                 <div class="modal-buttons">
                     <button class="btn-guardar" id="btnGuardarEdicion"><i class="fas fa-save"></i> Guardar Cambios</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalEditarFamilia')"><i class="fas fa-times"></i> Cancelar</button>
@@ -223,15 +213,12 @@
                 <label><i class="fas fa-hashtag"></i> Número de Mesa</label>
                 <input type="number" id="modNumeroMesaPrincipal" min="0" required>
                 <p style="color:rgba(255,255,255,0.4);font-size:10px;margin-top:-10px;margin-bottom:10px;">Usa un número libre (ej: 10, 20, 99)</p>
-
                 <label><i class="fas fa-users"></i> Capacidad (asientos)</label>
                 <input type="number" id="modCapacidadMesaPrincipal" min="1" required>
-
                 <div id="modInfoMesaPrincipal" style="background:rgba(23,162,184,0.15);padding:10px;border-radius:8px;margin-bottom:12px;font-size:12px;border-left:3px solid #17a2b8;">
                     <strong style="color:#17a2b8;">Información actual:</strong><br>
                     <span id="modInfoTexto">No hay mesa principal configurada</span>
                 </div>
-
                 <div class="modal-buttons">
                     <button type="submit" class="btn-guardar"><i class="fas fa-save"></i> Guardar Cambios</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalModificarMesaPrincipal')"><i class="fas fa-times"></i> Cancelar</button>
@@ -272,10 +259,8 @@
                     <option value="cuadrada">⬛ Cuadrada (4 sillas)</option>
                     <option value="redonda">🔴 Redonda (8 sillas)</option>
                 </select>
-
                 <label><i class="fas fa-hashtag"></i> Número</label>
                 <input type="number" id="numeroMesa" placeholder="Ej: 10" min="1" required>
-
                 <div class="modal-buttons">
                     <button type="submit" class="btn-guardar"><i class="fas fa-check"></i> Agregar</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalAgregarMesa')"><i class="fas fa-times"></i> Cancelar</button>
@@ -291,10 +276,8 @@
                 <label><i class="fas fa-hashtag"></i> Número de Mesa</label>
                 <input type="number" id="numeroMesaPrincipal" placeholder="Ej: 10" min="0" value="10" required>
                 <p style="color:rgba(255,255,255,0.4);font-size:10px;margin-top:-10px;margin-bottom:10px;">Usa un número libre (ej: 10, 20, 99)</p>
-
                 <label><i class="fas fa-users"></i> Capacidad (asientos)</label>
                 <input type="number" id="capacidadMesaPrincipal" placeholder="Ej: 30" min="1" value="30" required>
-
                 <div class="modal-buttons">
                     <button type="submit" class="btn-guardar"><i class="fas fa-check"></i> Crear</button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModal('modalMesaPrincipal')"><i class="fas fa-times"></i> Cancelar</button>
@@ -329,6 +312,7 @@
         let modoEliminarFamilia = false;
         let familias = [];
         let nextId = 1;
+        let mesaSeleccionada = null; // Guarda la mesa seleccionada por el usuario
 
         // =============================================
         // FUNCIONES DE FIREBASE
@@ -460,7 +444,7 @@
         }
 
         // =============================================
-        // EDITAR FAMILIA - NUEVA FUNCIONALIDAD
+        // EDITAR FAMILIA
         // =============================================
         function abrirModalEditarFamilia(familiaId) {
             const familia = familias.find(f => f.id === familiaId);
@@ -499,10 +483,7 @@
                 return;
             }
 
-            // Guardar el nombre anterior para el mensaje
             const nombreAnterior = familia.nombre;
-            
-            // Actualizar el nombre
             familia.nombre = nuevoNombre;
             
             await guardarEnFirebase();
@@ -517,7 +498,6 @@
                 </div>
             `;
             
-            // Actualizar la vista de la mesa
             mostrarInfoMesa(familia.mesaAsignada);
         }
 
@@ -605,6 +585,15 @@
         // RENDERIZADO
         // =============================================
         function cargarMesas() {
+            // Verificar que la mesa seleccionada aún exista
+            if (mesaSeleccionada !== null) {
+                const existe = MESAS.some(m => m.id === mesaSeleccionada) || 
+                              (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === mesaSeleccionada);
+                if (!existe) {
+                    mesaSeleccionada = null;
+                }
+            }
+            
             const salon = document.getElementById('salon');
             salon.innerHTML = '';
 
@@ -955,9 +944,11 @@
         }
 
         // =============================================
-        // MOSTRAR INFO DE MESA - CON BOTÓN EDITAR
+        // MOSTRAR INFO DE MESA - CORREGIDO
         // =============================================
         function mostrarInfoMesa(mesaId) {
+            mesaSeleccionada = mesaId; // Guarda la mesa seleccionada
+            
             const capacidad = getCapacidadMesa(mesaId);
             const ocupacion = getOcupacionMesa(mesaId);
             const familiasEnMesa = getFamiliasEnMesa(mesaId);
@@ -1019,6 +1010,40 @@
             }
             
             document.getElementById('info').innerHTML = html;
+        }
+
+        // =============================================
+        // ACTUALIZAR PANEL - RESPETA LA MESA SELECCIONADA
+        // =============================================
+        function actualizarPanel() {
+            if (modoEliminar || modoEliminarFamilia) return;
+            
+            // Si hay una mesa seleccionada, mostrar esa
+            if (mesaSeleccionada !== null) {
+                // Verificar que la mesa siga existiendo
+                const mesaExiste = MESAS.some(m => m.id === mesaSeleccionada) || 
+                                  (MESA_PRINCIPAL.habilitada && MESA_PRINCIPAL.id === mesaSeleccionada);
+                if (mesaExiste) {
+                    mostrarInfoMesa(mesaSeleccionada);
+                    return;
+                } else {
+                    // Si la mesa fue eliminada, limpiar la selección
+                    mesaSeleccionada = null;
+                }
+            }
+            
+            // Si no hay mesa seleccionada, mostrar la primera con familias
+            const mesasConFamilias = [...new Set(familias.map(f => f.mesaAsignada))];
+            if (mesasConFamilias.length > 0) {
+                mostrarInfoMesa(mesasConFamilias[0]);
+            } else {
+                document.getElementById('info').innerHTML = `
+                    <div class="mensaje-inicial">
+                        <i class="fas fa-users" style="font-size: 35px; display: block; margin-bottom: 10px; opacity: 0.4;"></i>
+                        No hay familias registradas
+                    </div>
+                `;
+            }
         }
 
         // =============================================
@@ -1226,6 +1251,7 @@
             const btn = document.querySelector('.btn-eliminar');
             
             if (modoEliminar) {
+                mesaSeleccionada = null; // Limpiar selección
                 btn.classList.add('activo');
                 btn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
                 document.querySelectorAll('.btn-eliminar-mesa').forEach(b => b.classList.add('visible'));
@@ -1253,6 +1279,11 @@
                 MESA_PRINCIPAL.habilitada = false;
             } else {
                 MESAS = MESAS.filter(m => m.id !== mesaId);
+            }
+            
+            // Si la mesa eliminada era la seleccionada, limpiar
+            if (mesaSeleccionada === mesaId) {
+                mesaSeleccionada = null;
             }
             
             guardarEnFirebase();
@@ -1489,24 +1520,6 @@
         }
 
         // =============================================
-        // ACTUALIZAR PANEL
-        // =============================================
-        function actualizarPanel() {
-            if (modoEliminar || modoEliminarFamilia) return;
-            const mesasConFamilias = [...new Set(familias.map(f => f.mesaAsignada))];
-            if (mesasConFamilias.length > 0) {
-                mostrarInfoMesa(mesasConFamilias[0]);
-            } else {
-                document.getElementById('info').innerHTML = `
-                    <div class="mensaje-inicial">
-                        <i class="fas fa-users" style="font-size: 35px; display: block; margin-bottom: 10px; opacity: 0.4;"></i>
-                        No hay familias registradas
-                    </div>
-                `;
-            }
-        }
-
-        // =============================================
         // RECARGAR
         // =============================================
         async function recargarMesas() {
@@ -1535,6 +1548,7 @@
             nextId = 1;
             modoEliminar = false;
             modoEliminarFamilia = false;
+            mesaSeleccionada = null;
 
             guardarEnFirebase();
             cargarMesas();
@@ -1568,9 +1582,6 @@
             });
         });
 
-        // =============================================
-        // INICIO
-        // =============================================
         console.log('✅ Sistema con mesas redondas de 8 sillas y edición de familias');
         console.log('📝 Modifica capacidad y número de la mesa principal');
         console.log('💾 Los datos se guardan en Firebase');
