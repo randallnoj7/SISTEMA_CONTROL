@@ -240,9 +240,9 @@
             <form id="formMesa">
                 <label><i class="fas fa-shapes"></i> Tipo</label>
                 <select id="tipoMesa" required>
-                    <option value="rectangular"><i class="fas fa-vector-square"></i> Rectangular (6 sillas)</option>
-                    <option value="cuadrada"><i class="fas fa-square"></i> Cuadrada (4 sillas)</option>
-                    <option value="redonda"><i class="fas fa-circle"></i> Redonda (8 sillas)</option>
+                    <option value="rectangular">📐 Rectangular (6 sillas)</option>
+                    <option value="cuadrada">⬛ Cuadrada (4 sillas)</option>
+                    <option value="redonda">🔴 Redonda (8 sillas)</option>
                 </select>
 
                 <label><i class="fas fa-hashtag"></i> Número</label>
@@ -374,7 +374,7 @@
         // =============================================
         document.addEventListener('DOMContentLoaded', async function() {
             await cargarDesdeFirebase();
-            await actualizarMesasRedondas(); // <-- CORRECCIÓN: Actualiza mesas existentes
+            await actualizarMesasRedondas();
             cargarMesas();
             cargarOpcionesMesas();
             
@@ -1231,12 +1231,27 @@
         });
 
         // =============================================
-        // AGREGAR MESA
+        // AGREGAR MESA - CORREGIDO
         // =============================================
         function abrirModalAgregarMesa() {
             document.getElementById('modalAgregarMesa').classList.add('active');
             document.getElementById('numeroMesa').value = '';
             document.getElementById('numeroMesa').focus();
+            
+            // Forzar que el selector muestre el texto correcto para redonda
+            const select = document.getElementById('tipoMesa');
+            const options = select.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === 'redonda') {
+                    options[i].textContent = '🔴 Redonda (8 sillas)';
+                }
+                if (options[i].value === 'rectangular') {
+                    options[i].textContent = '📐 Rectangular (6 sillas)';
+                }
+                if (options[i].value === 'cuadrada') {
+                    options[i].textContent = '⬛ Cuadrada (4 sillas)';
+                }
+            }
         }
 
         document.getElementById('formMesa').addEventListener('submit', async (e) => {
